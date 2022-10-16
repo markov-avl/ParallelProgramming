@@ -52,6 +52,7 @@ double integrate_par(double a, double b, double (*f)(double)) {
     return sum * delta;
 }
 
+
 double integrate_cpp_partial_sums(double a, double b, double (*f)(double)) {
     std::size_t T = std::thread::hardware_concurrency();
     auto partial_sums = std::make_unique<double[]>(T);
@@ -64,12 +65,15 @@ double integrate_cpp_partial_sums(double a, double b, double (*f)(double)) {
         partial_sums[t] *= dx;
     };
     std::vector<std::thread> workers;
-    for (std::size_t t = 0; t < T; ++t)
+    for (std::size_t t = 0; t < T; ++t) {
         workers.emplace_back(thread_proc, t);
-    for (auto &worker: workers)
+    }
+    for (auto &worker: workers) {
         worker.join();
-    for (std::size_t t = 1; t < T; ++t)
+    }
+    for (std::size_t t = 1; t < T; ++t) {
         partial_sums[0] += partial_sums[t];
+    }
 
     return partial_sums[0];
 }
@@ -82,7 +86,7 @@ double integral_rr(double a, double b, F f) {
     unsigned P = omp_get_num_procs();
 #pragma omp parallel
     {
-        unsigned T = omp_get_num_threads();
+        unsigned T = get_num_threads();
         unsigned t = omp_get_thread_num();
         for (unsigned k = 0; t + k * T < n; ++k) {
             sum += f(a + (t + k * T) * dx);
@@ -97,7 +101,7 @@ void measure_scalability(auto integrate_fn) {
     auto P = omp_get_num_procs();
     auto partial_res = std::make_unique<result_t[]>(P);
     for (auto T = 1; T <= P; ++T) {
-        omp_set_num_threads(T);
+        set_num_threads(T);
         partial_res[T - 1] = run_experiment(integrate_fn, -1, 1, f);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;
@@ -106,11 +110,6 @@ void measure_scalability(auto integrate_fn) {
         std::cout << "Ускорение: " << speedup << std::endl << std::endl;
     }
 }
-
-
-// g++-10 -fopenmp main.cpp --std=c++20 - чтобы запустить параллельное вычисление
-// double average (const double * V, size_t N);
-// for opm && c++
 
 
 int main() {
