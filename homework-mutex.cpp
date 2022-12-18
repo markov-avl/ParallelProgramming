@@ -6,15 +6,15 @@
 #include <iomanip>
 
 
-static unsigned num_threads = std::thread::hardware_concurrency();
+static unsigned threadsNum = std::thread::hardware_concurrency();
 
-void set_num_threads(unsigned T) {
-    num_threads = T;
+void setThreadsNum(unsigned T) {
+    threadsNum = T;
     omp_set_num_threads(T);
 }
 
-unsigned get_num_threads() {
-    return num_threads;
+unsigned getThreadsNum() {
+    return threadsNum;
 }
 
 
@@ -56,7 +56,7 @@ unsigned checkSumCpp(const unsigned *v, size_t n) {
     std::vector<std::thread> workers;
 
     auto worker = [&totalSum, &mtx, v, n](unsigned t) {
-        unsigned T = get_num_threads();
+        unsigned T = getThreadsNum();
         unsigned localSum = 0;
         size_t nt, i0;
 
@@ -76,7 +76,7 @@ unsigned checkSumCpp(const unsigned *v, size_t n) {
         totalSum ^= localSum;
     };
 
-    for (unsigned t = 1; t < get_num_threads(); ++t) {
+    for (unsigned t = 1; t < getThreadsNum(); ++t) {
         workers.emplace_back(worker, t);
     }
     worker(0);
@@ -109,7 +109,7 @@ void measure_scalability(auto checkSumFunction, unsigned *v, size_t n) {
     auto partial_res = std::make_unique<result_t[]>(P);
 
     for (auto T = 1; T <= P; ++T) {
-        set_num_threads(T);
+        setThreadsNum(T);
         partial_res[T - 1] = run_experiment(checkSumFunction, v, n);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;

@@ -6,20 +6,20 @@
 #include <omp.h>
 #define n (100000000)
 
-static unsigned num_threads = std::thread::hardware_concurrency();
+static unsigned threadsNum = std::thread::hardware_concurrency();
 
 struct result_t {
     double value, milliseconds;
 };
 
 
-void set_num_threads(unsigned T) {
-    num_threads = T;
+void setThreadsNum(unsigned T) {
+    threadsNum = T;
     omp_set_num_threads(T);
 }
 
-unsigned get_num_threads() {
-    return num_threads;
+unsigned getThreadsNum() {
+    return threadsNum;
 }
 
 
@@ -86,7 +86,7 @@ double integral_rr(double a, double b, F f) {
     unsigned P = omp_get_num_procs();
 #pragma omp parallel
     {
-        unsigned T = get_num_threads();
+        unsigned T = getThreadsNum();
         unsigned t = omp_get_thread_num();
         for (unsigned k = 0; t + k * T < n; ++k) {
             sum += f(a + (t + k * T) * dx);
@@ -101,7 +101,7 @@ void measure_scalability(auto integrate_fn) {
     auto P = omp_get_num_procs();
     auto partial_res = std::make_unique<result_t[]>(P);
     for (auto T = 1; T <= P; ++T) {
-        set_num_threads(T);
+        setThreadsNum(T);
         partial_res[T - 1] = run_experiment(integrate_fn, -1, 1, f);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;

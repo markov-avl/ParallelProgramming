@@ -10,7 +10,7 @@
 #define load(N) for (auto i = N; i > 0; --i) std::cout << "Load\n"
 
 
-static unsigned num_threads = std::thread::hardware_concurrency();
+static unsigned threadsNum = std::thread::hardware_concurrency();
 struct result_t {
     double value, milliseconds;
 };
@@ -53,13 +53,13 @@ double average_cs_omp(const double *v, size_t n) {
 }
 
 
-void set_num_threads(unsigned T) {
-    num_threads = T;
+void setThreadsNum(unsigned T) {
+    threadsNum = T;
     omp_set_num_threads(T);
 }
 
-unsigned get_num_threads() {
-    return num_threads;
+unsigned getThreadsNum() {
+    return threadsNum;
 }
 
 
@@ -86,7 +86,7 @@ void measure_scalability(auto averageFunction) {
     auto v = std::make_unique<double[]>(N);
     fillVector(v.get(), N);
     for (auto T = 1; T <= P; ++T) {
-        set_num_threads(T);
+        setThreadsNum(T);
         partial_res[T - 1] = run_experiment(averageFunction, v.get(), N);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;
@@ -218,7 +218,7 @@ double average(const double *v, size_t n) {
     }
 
     std::vector<std::thread> workers;
-    for (unsigned t = 1; t < get_num_threads(); ++t) {
+    for (unsigned t = 1; t < getThreadsNum(); ++t) {
         workers.emplace_back(worker, t);
     }
     worker(0);

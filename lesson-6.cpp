@@ -11,21 +11,19 @@ void srand(int seed);
 
 typedef uint64_t word;
 
-word rand(word s);
-
-static unsigned num_threads = std::thread::hardware_concurrency();
+static unsigned threadsNum = std::thread::hardware_concurrency();
 
 struct partial_sum_t {
     alignas(64) int value;
 };
 
-void set_num_threads(unsigned T) {
-    num_threads = T;
+void setThreadsNum(unsigned T) {
+    threadsNum = T;
     omp_set_num_threads(T);
 }
 
-unsigned get_num_threads() {
-    return num_threads;
+unsigned getThreadsNum() {
+    return threadsNum;
 }
 
 
@@ -33,7 +31,7 @@ unsigned get_num_threads() {
 # define B 1
 // c = 1 << 64
 
-void randomize(word seed, int *V, size_t n, int a, int b) {
+void randomizedAverage(word seed, int *V, size_t n, int a, int b) {
     word x = seed;
     for (size_t i = 0; i < n; ++i) {
         x = A * x + b;
@@ -46,7 +44,7 @@ struct lut_row {
     size_t b;
 };
 
-auto get_lut(unsigned T) {
+auto getLut(unsigned T) {
     auto lut = std::make_unique<lut_row[]>(T + 1);
     lut[0].a = 1;
     lut[0].b = 0;
@@ -57,10 +55,10 @@ auto get_lut(unsigned T) {
     return lut;
 }
 
-auto randomizeV2(word seed, int *V, size_t n, int a, int b) {
+auto randomizedAverageV2C(word seed, int *V, size_t n, int a, int b) {
     word s0 = seed;
     size_t T = omp_get_num_procs();
-    static auto lut = get_lut(T);
+    static auto lut = getLut(T);
     auto average = 0;
 
 #pragma omp parallel
@@ -78,12 +76,12 @@ auto randomizeV2(word seed, int *V, size_t n, int a, int b) {
     return average / T;
 }
 
-auto randomizeV2_cpp(word seed, int *V, size_t n, int a, int b) {
+auto randomizedAverageV2Cpp(word seed, int *V, size_t n, int a, int b) {
     std::vector<std::thread> thr;
     word s0 = seed;
-    auto T = get_num_threads();
+    auto T = getThreadsNum();
 
-    static auto lut = get_lut(T);
+    static auto lut = getLut(T);
     auto partial_sums = std::make_unique<partial_sum_t[]>(T);
 
     auto worker = [&partial_sums, T, s0, &V, n, a, b](unsigned t)
@@ -100,7 +98,7 @@ auto randomizeV2_cpp(word seed, int *V, size_t n, int a, int b) {
         partial_sums[t].value = local_sum;
     };
 
-    for (unsigned t = 1; t < get_num_threads(); ++t) {
+    for (unsigned t = 1; t < getThreadsNum(); ++t) {
         thr.emplace_back(worker, t);
     }
     worker(0);
@@ -117,9 +115,9 @@ auto randomizeV2_cpp(word seed, int *V, size_t n, int a, int b) {
 int main() {
     size_t n = 10;
     int *V = new int[n];
-//    randomize(456, V, n, 0, 1);
+//    randomizedAverage(456, V, n, 0, 1);
 //    for (int i = 0; i < n; i++) {
 //        std::cout << V[i];
 //    }
-    std::cout << randomizeV2(456, V, n, 1, 999) << std::endl;
+    std::cout << randomizedAverageV2C(456, V, n, 1, 999) << std::endl;
 }

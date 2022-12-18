@@ -8,9 +8,9 @@
 #include <atomic>
 
 
-static unsigned num_threads = std::thread::hardware_concurrency();
+static unsigned threadsNum = std::thread::hardware_concurrency();
 
-class my_barrier
+class Barrier
 {
     std::condition_variable cv;
     std::mutex mtx;
@@ -18,10 +18,10 @@ class my_barrier
     unsigned WT = 0;
     bool gen{};
 public:
-    my_barrier(unsigned threads): T(threads) {}
+    Barrier(unsigned threads): T(threads) {}
     void arrive_and_wait();
 };
-void my_barrier::arrive_and_wait() {
+void Barrier::arrive_and_wait() {
     std::unique_lock l {mtx};
     if (++WT < T)
     {
@@ -39,13 +39,13 @@ void my_barrier::arrive_and_wait() {
     }
 }
 
-void set_num_threads(unsigned T) {
-    num_threads = T;
+void setThreadsNum(unsigned T) {
+    threadsNum = T;
     omp_set_num_threads(T);
 }
 
-unsigned get_num_threads() {
-    return num_threads;
+unsigned getThreadsNum() {
+    return threadsNum;
 }
 
 
@@ -70,11 +70,11 @@ run_experiment(double (*checkSum)(const double *, size_t), const double *v, size
 
 
 double average(const double *v, size_t n) {
-    auto T = get_num_threads();
+    auto T = getThreadsNum();
     auto partial_sums = std::make_unique<partial_sum_t[]>(T);
 
     std::vector<std::thread> thr;
-    my_barrier bar(T);
+    Barrier bar(T);
     auto worker = [&partial_sums, T, &bar, v, n](unsigned t) {
         double local_sum = 0;
         for (size_t i = t; i < n; i += T) {
@@ -91,7 +91,7 @@ double average(const double *v, size_t n) {
         }
     };
 
-    for (unsigned t = 1; t < get_num_threads(); ++t) {
+    for (unsigned t = 1; t < getThreadsNum(); ++t) {
         thr.emplace_back(worker, t);
     }
     worker(0);
@@ -107,7 +107,7 @@ void measure_scalability(auto average_func, double *v, size_t n) {
     auto partial_res = std::make_unique<result_t[]>(P);
 
     for (auto T = 1; T <= P; ++T) {
-        set_num_threads(T);
+        setThreadsNum(T);
         partial_res[T - 1] = run_experiment(average_func, v, n);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;

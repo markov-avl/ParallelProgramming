@@ -9,7 +9,7 @@
 #define N (10000000)
 
 
-static unsigned num_threads = std::thread::hardware_concurrency();
+static unsigned threadsNum = std::thread::hardware_concurrency();
 struct result_t {
     double value, milliseconds;
 };
@@ -21,13 +21,13 @@ union partial_sum_t {
 };
 
 
-void set_num_threads(unsigned T) {
-    num_threads = T;
+void setThreadsNum(unsigned T) {
+    threadsNum = T;
     omp_set_num_threads(T);
 }
 
-unsigned get_num_threads() {
-    return num_threads;
+unsigned getThreadsNum() {
+    return threadsNum;
 }
 
 
@@ -54,7 +54,7 @@ void measure_scalability(auto averageFunction) {
     double v[N];
     fillVector(v, N);
     for (auto T = 1; T <= P; ++T) {
-        set_num_threads(T);
+        setThreadsNum(T);
         partial_res[T - 1] = run_experiment(averageFunction, v, N);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;
@@ -89,7 +89,7 @@ double average_par(const double *v, size_t n) {
 
 
 double average_cpp_partial_sums(const double *v, size_t n) {
-    std::size_t T = get_num_threads();
+    std::size_t T = getThreadsNum();
     auto partial_sums = std::make_unique<double[]>(T);
     auto thread_proc = [T, &partial_sums, v, n](std::size_t t) {
         partial_sums[t] = 0;
