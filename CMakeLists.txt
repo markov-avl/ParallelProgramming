@@ -18,4 +18,9 @@ add_executable(HomeworkMutex homework-mutex.cpp)
 add_executable(Fibonacci fibonacci.cpp)
 add_executable(Future future.cpp)
 
+set(HELPERS helper/partial_sum.h helper/tester.h helper/threads.h helper/vector.h helper/threads.cpp)
+
+add_executable(DynamicAverage lab1/dynamic_average.cpp ${HELPERS})
+add_executable(CS lab1/cs.cpp ${HELPERS})
+
 add_executable(Lab2 lab2/main.cpp lab2/barrier.cpp lab2/lut.cpp helper/threads.cpp)

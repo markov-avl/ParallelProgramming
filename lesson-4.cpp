@@ -142,7 +142,7 @@ double average_par_static(const double *v, size_t n) {
 }
 
 
-double average_par_dynamic(const double *v, size_t n) {
+double averageDynamicParallel(const double *v, size_t n) {
     double sum = 0;
 #pragma omp parallel for reduction(+: sum) schedule(dynamic)
     for (size_t i = 0; i < n; ++i) {
@@ -161,5 +161,5 @@ int main() {
     std::cout << "AverageStatic:" << std::endl;
     measureScalability(average_par_static);
     std::cout << "AverageDynamic:" << std::endl;
-    measureScalability(average_par_dynamic);
+    measureScalability(averageDynamicParallel);
 }
