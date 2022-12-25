@@ -3,7 +3,7 @@
 
 void setThreadsNum(unsigned T) {
     threadsNum = T;
-    omp_set_num_threads(T);
+    omp_set_num_threads((int) T);
 }
 
 unsigned getThreadsNum() {

@@ -4,11 +4,12 @@
 #include <type_traits>
 #include <iostream>
 #include <omp.h>
+
 #define n (100000000)
 
 static unsigned threadsNum = std::thread::hardware_concurrency();
 
-struct result_t {
+struct TestResult {
     double value, milliseconds;
 };
 
@@ -23,12 +24,12 @@ unsigned getThreadsNum() {
 }
 
 
-result_t
+TestResult
 run_experiment(double (*integrate)(double, double, double (*f)(double)), double a, double b, double (*f)(double)) {
     auto tm1 = std::chrono::steady_clock::now();
     double value = integrate(a, b, f);
     auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - tm1).count();
-    result_t res{value, (double) time};
+    TestResult res{value, (double) time};
     return res;
 }
 
@@ -96,13 +97,13 @@ double integral_rr(double a, double b, F f) {
 }
 
 
-void measure_scalability(auto integrate_fn) {
+void measureScalability(auto integrate_fn) {
     auto f = [](double x) { return x * x; };
     auto P = omp_get_num_procs();
-    auto partial_res = std::make_unique<result_t[]>(P);
+    auto partial_res = std::make_unique<TestResult[]>(P);
     for (auto T = 1; T <= P; ++T) {
         setThreadsNum(T);
-        partial_res[T - 1] = run_experiment(integrate_fn, -1, 1, f);
+        partial_res[T - 1] = run_experiment(averageFunction, -1, 1, f);
         auto speedup = partial_res[0].milliseconds / partial_res[T - 1].milliseconds;
         std::cout << "Количество потоков: " << T << std::endl;
         std::cout << "Время: " << partial_res[T - 1].milliseconds << std::endl;
@@ -114,9 +115,9 @@ void measure_scalability(auto integrate_fn) {
 
 int main() {
     std::cout << "IntegrateSeq:" << std::endl;
-    measure_scalability(integrate_seq);
+    measureScalability(integrate_seq);
     std::cout << "IntegratePar:" << std::endl;
-    measure_scalability(integrate_par);
+    measureScalability(integrate_par);
     std::cout << "IntegrateCppPartialSums:" << std::endl;
-    measure_scalability(integrate_cpp_partial_sums);
+    measureScalability(integrate_cpp_partial_sums);
 }

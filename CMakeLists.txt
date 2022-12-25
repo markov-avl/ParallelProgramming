@@ -15,5 +15,7 @@ add_executable(Average average.cpp)
 add_executable(Mutex mutex.cpp)
 add_executable(Atomic atomic.cpp)
 add_executable(HomeworkMutex homework-mutex.cpp)
+add_executable(Fibonacci fibonacci.cpp)
+add_executable(Future future.cpp)
 
-add_executable(Lab2 lab2/main.cpp lab2/barrier.cpp lab2/lut.cpp lab2/tester.cpp lab2/threads.cpp)
+add_executable(Lab2 lab2/main.cpp lab2/barrier.cpp lab2/lut.cpp helper/threads.cpp)

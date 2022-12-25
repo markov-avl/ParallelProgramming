@@ -10,7 +10,7 @@
 
 
 static unsigned threadsNum = std::thread::hardware_concurrency();
-struct result_t {
+struct TestResult {
     double value, milliseconds;
 };
 
@@ -38,19 +38,19 @@ void fillVector(double *v, size_t n) {
 }
 
 
-result_t
+TestResult
 run_experiment(double (*average)(const double *, size_t), const double *v, size_t n) {
     auto tm1 = std::chrono::steady_clock::now();
     double value = average(v, n);
     auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - tm1).count();
-    result_t res{value, (double) time};
+    TestResult res{value, (double) time};
     return res;
 }
 
 
-void measure_scalability(auto averageFunction) {
+void measureScalability(auto averageFunction) {
     auto P = omp_get_num_procs();
-    auto partial_res = std::make_unique<result_t[]>(P);
+    auto partial_res = std::make_unique<TestResult[]>(P);
     double v[N];
     fillVector(v, N);
     for (auto T = 1; T <= P; ++T) {
@@ -216,13 +216,13 @@ double averageAlign(const double* v, size_t n) {
 
 int main() {
 //    std::cout << "AverageSeq:" << std::endl;
-//    measure_scalability(average_seq);
+//    measureScalability(average_seq);
 //    std::cout << "AveragePar:" << std::endl;
-//    measure_scalability(average_par);
+//    measureScalability(average_par);
     std::cout << "AveragePar1:" << std::endl;
-    measure_scalability(average_par_1);
+    measureScalability(average_par_1);
     std::cout << "AveragePar2:" << std::endl;
-    measure_scalability(average_par_2);
+    measureScalability(average_par_2);
 //    std::cout << "AverageCppPartialSums:" << std::endl;
-//    measure_scalability(average_cpp_partial_sums);
+//    measureScalability(average_cpp_partial_sums);
 }

@@ -53,18 +53,18 @@ struct partial_sum_t {
     alignas(64) double value;
 };
 
-struct result_t {
+struct TestResult {
     double value;
     double milliseconds;
 };
 
 
-result_t
+TestResult
 run_experiment(double (*checkSum)(const double *, size_t), const double *v, size_t n) {
     auto tm1 = std::chrono::steady_clock::now();
     double value = checkSum(v, n);
     auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - tm1).count();
-    result_t res{value, (double) time};
+    TestResult res{value, (double) time};
     return res;
 }
 
@@ -104,7 +104,7 @@ double average(const double *v, size_t n) {
 
 void measure_scalability(auto average_func, double *v, size_t n) {
     auto P = omp_get_num_procs();
-    auto partial_res = std::make_unique<result_t[]>(P);
+    auto partial_res = std::make_unique<TestResult[]>(P);
 
     for (auto T = 1; T <= P; ++T) {
         setThreadsNum(T);

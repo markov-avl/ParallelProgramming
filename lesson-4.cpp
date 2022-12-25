@@ -9,7 +9,7 @@
 
 
 static unsigned threadsNum = std::thread::hardware_concurrency();
-struct result_t {
+struct TestResult {
     double value, milliseconds;
 };
 
@@ -37,19 +37,19 @@ void fillVector(double *v, size_t n) {
 }
 
 
-result_t
+TestResult
 run_experiment(double (*average)(const double *, size_t), const double *v, size_t n) {
     auto tm1 = std::chrono::steady_clock::now();
     double value = average(v, n);
     auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - tm1).count();
-    result_t res{value, (double) time};
+    TestResult res{value, (double) time};
     return res;
 }
 
 
-void measure_scalability(auto averageFunction) {
+void measureScalability(auto averageFunction) {
     auto P = omp_get_num_procs();
-    auto partial_res = std::make_unique<result_t[]>(P);
+    auto partial_res = std::make_unique<TestResult[]>(P);
     auto v = std::make_unique<double[]>(N);
     fillVector(v.get(), N);
     for (auto T = 1; T <= P; ++T) {
@@ -131,9 +131,35 @@ double average_par_2(const double *v, size_t n) {
 }
 
 
+double average_par_static(const double *v, size_t n) {
+    double sum = 0;
+#pragma omp parallel for reduction(+: sum)
+    for (size_t i = 0; i < n; ++i) {
+        sum += v[i];
+    }
+
+    return sum / (double) n;
+}
+
+
+double average_par_dynamic(const double *v, size_t n) {
+    double sum = 0;
+#pragma omp parallel for reduction(+: sum) schedule(dynamic)
+    for (size_t i = 0; i < n; ++i) {
+        sum += v[i];
+    }
+
+    return sum / (double) n;
+}
+
+
 int main() {
-    std::cout << "AveragePar1:" << std::endl;
-    measure_scalability(average_par_1);
-    std::cout << "AveragePar2:" << std::endl;
-    measure_scalability(average_par_2);
+    // std::cout << "AveragePar1:" << std::endl;
+    // measureScalability(average_par_1);
+    // std::cout << "AveragePar2:" << std::endl;
+    // measureScalability(average_par_2);
+    std::cout << "AverageStatic:" << std::endl;
+    measureScalability(average_par_static);
+    std::cout << "AverageDynamic:" << std::endl;
+    measureScalability(average_par_dynamic);
 }

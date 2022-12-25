@@ -4,16 +4,16 @@
 
 #define N (100000000)
 
-struct result_t {
+struct TestResult {
     double value, milliseconds;
 };
 
-result_t
+TestResult
 run_experiment(double (*integrate)(double, double, double (*f)(double)), double a, double b, double (*f)(double)) {
     auto tm1 = std::chrono::steady_clock::now();
     double value = integrate(a, b, f);
     auto time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - tm1).count();
-    result_t res{value, (double) time};
+    TestResult res{value, (double) time};
     return res;
 }
 

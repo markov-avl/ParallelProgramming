@@ -5,8 +5,8 @@
 #include <condition_variable>
 #include <thread>
 #include "lut.h"
-#include "partial_sum.h"
-#include "threads.h"
+#include "../helper/partial_sum.h"
+#include "../helper/threads.h"
 
 typedef uint64_t word;
 
