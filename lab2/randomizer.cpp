@@ -22,7 +22,29 @@ int randomizedAverageSimple(word seed, int *v, size_t n, int a, int b) {
     return sum / n;
 }
 
-int randomizedAverageOmp(word seed, int *v, size_t n, int a, int b) {
+
+unsigned randomizeOMP(word seed, unsigned *v, size_t n, unsigned a, unsigned b) {
+    size_t T = omp_get_num_procs();
+    static auto lut = getLut(T);
+
+#pragma omp parallel
+    {
+        unsigned t = omp_get_thread_num();
+        size_t St = lut[t].a * seed + lut[t].b;
+
+        for (unsigned k = t; k < n; k += T) {
+            v[k] = a + int(St % (b - a + 1));
+            St = lut[t].a * St + lut[t].b;
+        }
+    }
+    int sum = 0;
+    for (unsigned i = 0; i < n; ++i)
+        sum += v[i];
+    return (sum / n);
+}
+
+
+unsigned randomizedAverageOmp(word seed, unsigned *v, size_t n, unsigned a, unsigned b) {
     auto T = omp_get_num_procs();
     auto partialSums = std::make_unique<PartialSum<word>[]>(T);
     static auto lut = getLut(T);
@@ -50,7 +72,7 @@ int randomizedAverageOmp(word seed, int *v, size_t n, int a, int b) {
 }
 
 
-int randomizedAverageCpp(word seed, int *v, size_t n, int a, int b) {
+unsigned randomizedAverageCpp(word seed, int *v, size_t n, int a, int b) {
     auto T = getThreadsNum();
     auto partialSums = std::make_unique<PartialSum<word>[]>(T);
     static auto lut = getLut(T);
@@ -85,11 +107,11 @@ int randomizedAverageCpp(word seed, int *v, size_t n, int a, int b) {
 }
 
 int main() {
-    word seed = 123456789;
-    int a = 1;
-    int b = 10;
-    auto v = std::make_unique<int[]>(N);
+    word seed = 100;
+    unsigned a = 1;
+    unsigned b = 80;
+    auto v = std::make_unique<unsigned[]>(N);
 
-    measureScalability("Randomized Average (OMP)", randomizedAverageOmp, seed, v.get(), N, a, b);
-    measureScalability("Randomized Average (C++)", randomizedAverageCpp, seed, v.get(), N, a, b);
+    measureScalability("Randomized Average (OMP)", randomizeOMP, seed, v.get(), N, a, b);
+//    measureScalability("Randomized Average (C++)", randomizedAverageCpp, seed, v.get(), N, a, b);
 }

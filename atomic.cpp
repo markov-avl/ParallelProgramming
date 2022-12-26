@@ -88,10 +88,10 @@ unsigned checkSumMutex(const unsigned* v, size_t n) {
 }
 
 unsigned checkSumAtomic(const unsigned* v, size_t n) {
-    std::atomic<unsigned> totalSum{0};
+    std::atomic<unsigned> globalSum{0};
     std::vector<std::thread> workers;
 
-    auto worker = [&totalSum, v, n] (unsigned t) {
+    auto worker = [&globalSum, v, n] (unsigned t) {
         unsigned T = getThreadsNum();
         unsigned localSum = 0;
         size_t nt, i0;
@@ -108,7 +108,7 @@ unsigned checkSumAtomic(const unsigned* v, size_t n) {
             localSum ^= v[i];
         }
 
-        totalSum.fetch_xor(localSum, std::memory_order_relaxed);
+        globalSum.fetch_xor(localSum, std::memory_order_relaxed);
     };
 
     for (unsigned t = 1; t < getThreadsNum(); ++t) {
@@ -119,7 +119,7 @@ unsigned checkSumAtomic(const unsigned* v, size_t n) {
         w.join();
     }
 
-    return totalSum;
+    return globalSum;
 }
 
 
