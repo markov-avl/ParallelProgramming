@@ -17,6 +17,5 @@ int main() {
     auto v = std::make_unique<unsigned[]>(N);
     fillVector<unsigned>(v.get(), 1);
 
-    std::cout << "Average Dynamic Parallel:" << std::endl;
-    measureScalability(averageDynamicParallel, v.get(), N);
+    measureScalability("Average Dynamic Parallel", averageDynamicParallel, v.get(), N);
 }

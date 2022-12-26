@@ -22,5 +22,6 @@ set(HELPERS helper/partial_sum.h helper/tester.h helper/threads.h helper/vector.
 
 add_executable(DynamicAverage lab1/dynamic_average.cpp ${HELPERS})
 add_executable(CS lab1/cs.cpp ${HELPERS})
+add_executable(FS lab1/fs.cpp ${HELPERS})
 
-add_executable(Lab2 lab2/main.cpp lab2/barrier.cpp lab2/lut.cpp helper/threads.cpp)
+add_executable(Lab2 lab2/randomizer.cpp helper/barrier.cpp helper/lut.cpp helper/threads.cpp)

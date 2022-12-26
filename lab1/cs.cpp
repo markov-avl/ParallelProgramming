@@ -41,10 +41,10 @@ unsigned checkSumOmp(const unsigned *v, size_t n) {
 
 unsigned checkSumCpp(const unsigned *v, size_t n) {
     unsigned totalSum = 0;
-    std::mutex mtx;
+    std::mutex mutex;
     std::vector<std::thread> workers;
 
-    auto worker = [&totalSum, &mtx, v, n](unsigned t) {
+    auto worker = [&totalSum, &mutex, v, n](unsigned t) {
         auto T = getThreadsNum();
         unsigned localSum = 0;
         size_t nt, i0;
@@ -61,7 +61,7 @@ unsigned checkSumCpp(const unsigned *v, size_t n) {
             localSum ^= v[i];
         }
 
-        std::scoped_lock lock{mtx};
+        std::scoped_lock lock{mutex};
         totalSum ^= localSum;
     };
 
@@ -81,11 +81,7 @@ int main() {
     auto v = std::make_unique<unsigned[]>(N);
     fillVector<unsigned>(v.get(), 1);
 
-    std::cout << "Check Sum (C):" << std::endl;
-    measureScalability<unsigned>(checkSumOmp, v.get(), N);
-
+    measureScalability("Check Sum (OMP)", checkSumOmp, v.get(), N);
     std::cout << std::endl;
-
-    std::cout << "Check Sum (C++):" << std::endl;
-    measureScalability<unsigned>(checkSumOmp, v.get(), N);
+    measureScalability("Check Sum (C++)", checkSumOmp, v.get(), N);
 }

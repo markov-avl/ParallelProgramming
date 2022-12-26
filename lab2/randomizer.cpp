@@ -4,13 +4,14 @@
 #include <omp.h>
 #include <condition_variable>
 #include <thread>
-#include "lut.h"
+#include "../helper/lut.h"
 #include "../helper/partial_sum.h"
 #include "../helper/threads.h"
+#include "../helper/tester.h"
+#include "../helper/vector.h"
 
-typedef uint64_t word;
 
-auto randomizedAverage(word seed, int *v, size_t n, int a, int b) {
+int randomizedAverageSimple(word seed, int *v, size_t n, int a, int b) {
     auto x = seed;
     word sum = 0;
     for (auto i = 0; i < n; ++i) {
@@ -21,16 +22,15 @@ auto randomizedAverage(word seed, int *v, size_t n, int a, int b) {
     return sum / n;
 }
 
-auto randomizedAverageV2C(word seed, int *v, size_t n, int a, int b) {
-    auto s0 = seed;
+int randomizedAverageOmp(word seed, int *v, size_t n, int a, int b) {
     auto T = omp_get_num_procs();
     auto partialSums = std::make_unique<PartialSum<word>[]>(T);
     static auto lut = getLut(T);
 
-#pragma omp parallel
+#pragma omp parallel shared(partialSums, T)
     {
         auto t = omp_get_thread_num();
-        word St = lut[t].a * s0 + lut[t].b;
+        word St = lut[t].a * seed + lut[t].b;
         word localSum = 0;
 
         for (auto k = t; k < n; k += T) {
@@ -49,15 +49,15 @@ auto randomizedAverageV2C(word seed, int *v, size_t n, int a, int b) {
     return partialSums[0].value / n;
 }
 
-auto randomizedAverageV2Cpp(word seed, int *v, size_t n, int a, int b) {
-    auto s0 = seed;
+
+int randomizedAverageCpp(word seed, int *v, size_t n, int a, int b) {
     auto T = getThreadsNum();
     auto partialSums = std::make_unique<PartialSum<word>[]>(T);
     static auto lut = getLut(T);
     std::vector<std::thread> workers;
 
-    auto worker = [&partialSums, T, s0, &v, n, a, b](unsigned t) {
-        word St = lut[t].a * s0 + lut[t].b;
+    auto worker = [&partialSums, &v, T, seed, n, a, b](unsigned t) {
+        word St = lut[t].a * seed + lut[t].b;
         word localSum = 0;
 
         for (auto k = t; k < n; k += T) {
@@ -81,17 +81,15 @@ auto randomizedAverageV2Cpp(word seed, int *v, size_t n, int a, int b) {
         partialSums[0].value += partialSums[i].value;
     }
 
-    return partialSums[0].value / n;
+    return (int) (partialSums[0].value / n);
 }
 
 int main() {
-    auto seed = 453453453534534545;
-    auto a = 1;
-    auto b = 1000000;
-    auto n = 100000000;
-    auto v = std::make_unique<int[]>(n);
+    word seed = 123456789;
+    int a = 1;
+    int b = 10;
+    auto v = std::make_unique<int[]>(N);
 
-    std::cout << randomizedAverage(seed, v.get(), n, a, b) << std::endl;
-    std::cout << randomizedAverageV2C(seed, v.get(), n, a, b) << std::endl;
-    std::cout << randomizedAverageV2Cpp(seed, v.get(), n, a, b) << std::endl;
+    measureScalability("Randomized Average (OMP)", randomizedAverageOmp, seed, v.get(), N, a, b);
+    measureScalability("Randomized Average (C++)", randomizedAverageCpp, seed, v.get(), N, a, b);
 }
