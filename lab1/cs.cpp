@@ -2,9 +2,8 @@
 #include <vector>
 #include <omp.h>
 #include <mutex>
+#include "cs.h"
 #include "../helper/threads.h"
-#include "../helper/tester.h"
-#include "../helper/vector.h"
 
 
 unsigned checkSumOmp(const unsigned *v, size_t n) {
@@ -74,14 +73,4 @@ unsigned checkSumCpp(const unsigned *v, size_t n) {
     }
 
     return totalSum;
-}
-
-
-int main() {
-    auto v = std::make_unique<unsigned[]>(N);
-    fillVector<unsigned>(v.get(), 1);
-
-    measureScalability("Check Sum (OMP)", checkSumOmp, v.get(), N);
-    std::cout << std::endl;
-    measureScalability("Check Sum (C++)", checkSumOmp, v.get(), N);
 }

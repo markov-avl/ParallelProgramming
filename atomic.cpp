@@ -87,7 +87,7 @@ unsigned checkSumMutex(const unsigned* v, size_t n) {
     return totalSum;
 }
 
-unsigned checkSumAtomic(const unsigned* v, size_t n) {
+unsigned checkSumAtomicCpp(const unsigned*, size_t) {
     std::atomic<unsigned> globalSum{0};
     std::vector<std::thread> workers;
 
@@ -131,5 +131,5 @@ int main() {
     }
     std::cout << "CheckSum Mutex OMP value: " << std::hex << checkSumOMP(m.get(), n1) << std::endl;
     std::cout << "CheckSum Mutex C++ value: " << std::hex << checkSumMutex(m.get(), n1) << std::endl;
-    std::cout << "CheckSum Atomic C++ value: " << std::hex << checkSumAtomic(m.get(), n1) << std::endl;
+    std::cout << "CheckSum Atomic C++ value: " << std::hex << checkSumAtomicCpp(m.get(), n1) << std::endl;
 }

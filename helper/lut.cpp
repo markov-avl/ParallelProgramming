@@ -10,6 +10,7 @@ std::unique_ptr<LutRow[]> getLut(unsigned T) {
     for (auto i = 1; i < T; ++i) {
         lut[i].a = lut[i - 1].a * A;
         lut[i].b = A * lut[i - 1].b + B;
+//        std::cout << i << ": " << lut[i].a << " " << lut[i].b << std::endl;
     }
     return lut;
 }

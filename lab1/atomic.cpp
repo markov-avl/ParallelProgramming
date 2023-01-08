@@ -1,15 +1,45 @@
 #include <thread>
 #include <vector>
 #include <c++/10/atomic>
+#include <omp.h>
 #include "../helper/threads.h"
-#include "../helper/vector.h"
-#include "../helper/tester.h"
 
-unsigned checkSumAtomic(const unsigned *v, size_t n) {
-    std::atomic<unsigned> globalSum{0};
+#include "atomic.h"
+
+unsigned checkSumAtomicOmp(const unsigned *v, size_t n) {
+    auto checkSum = 0U;
+
+#pragma omp parallel shared(checkSum)
+    {
+        auto t = omp_get_thread_num();
+        auto T = omp_get_num_threads();
+
+        auto localSum = 0U;
+        size_t nt, i0;
+
+        if (t < n % T) {
+            nt = n / T + 1;
+            i0 = nt * t;
+        } else {
+            nt = n / T;
+            i0 = nt * (n % T);
+        }
+
+        for (auto i = i0; i < nt + i0; ++i) {
+            localSum ^= v[i];
+        }
+#pragma omp atomic
+        checkSum ^= localSum;
+    }
+
+    return checkSum;
+}
+
+unsigned checkSumAtomicCpp(const unsigned *v, size_t n) {
+    std::atomic<unsigned> checkSum{0};
     std::vector<std::thread> workers;
 
-    auto worker = [&globalSum, v, n](unsigned t) {
+    auto worker = [&checkSum, v, n](unsigned t) {
         unsigned T = getThreadsNum();
         unsigned localSum = 0;
         size_t nt, i0;
@@ -26,7 +56,7 @@ unsigned checkSumAtomic(const unsigned *v, size_t n) {
             localSum ^= v[i];
         }
 
-        globalSum.fetch_xor(localSum, std::memory_order_relaxed);
+        checkSum.fetch_xor(localSum, std::memory_order_relaxed);
     };
 
     for (unsigned t = 1; t < getThreadsNum(); ++t) {
@@ -37,12 +67,5 @@ unsigned checkSumAtomic(const unsigned *v, size_t n) {
         w.join();
     }
 
-    return globalSum;
-}
-
-int main() {
-    auto v = std::make_unique<unsigned[]>(N);
-    fillVector(v.get(), 0x12345678U);
-
-    measureScalability("Check Sum (ATOMIC, C++)", checkSumAtomic, v.get(), N);
+    return checkSum;
 }

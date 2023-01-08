@@ -64,7 +64,7 @@ void measureScalability(auto averageFunction) {
 }
 
 
-double average_par_1(const double *v, size_t n) {
+double averageAlignedOmp(const double *v, size_t n) {
     unsigned T;
     partial_sum_t *sums;
     double result = 0;
@@ -131,7 +131,7 @@ double average_par_2(const double *v, size_t n) {
 }
 
 
-double average_par_static(const double *v, size_t n) {
+double averageStaticOmp(const double *v, size_t n) {
     double sum = 0;
 #pragma omp parallel for reduction(+: sum)
     for (size_t i = 0; i < n; ++i) {
@@ -155,11 +155,11 @@ double averageDynamicParallel(const double *v, size_t n) {
 
 int main() {
     // std::cout << "AveragePar1:" << std::endl;
-    // measureScalability(average_par_1);
+    // measureScalability(averageAlignedOmp);
     // std::cout << "AveragePar2:" << std::endl;
     // measureScalability(average_par_2);
     std::cout << "AverageStatic:" << std::endl;
-    measureScalability(average_par_static);
+    measureScalability(averageStaticOmp);
     std::cout << "AverageDynamic:" << std::endl;
     measureScalability(averageDynamicParallel);
 }

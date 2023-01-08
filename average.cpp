@@ -114,7 +114,7 @@ double average_cpp_partial_sums(const double *v, size_t n) {
 }
 
 
-double average_par_1(const double *v, size_t n) {
+double averageAlignedOmp(const double *v, size_t n) {
     unsigned T;
     partial_sum_t *sums;
     double result = 0;
@@ -220,7 +220,7 @@ int main() {
 //    std::cout << "AveragePar:" << std::endl;
 //    measureScalability(average_par);
     std::cout << "AveragePar1:" << std::endl;
-    measureScalability(average_par_1);
+    measureScalability(averageAlignedOmp);
     std::cout << "AveragePar2:" << std::endl;
     measureScalability(average_par_2);
 //    std::cout << "AverageCppPartialSums:" << std::endl;

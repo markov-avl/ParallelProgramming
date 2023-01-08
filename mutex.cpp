@@ -245,7 +245,7 @@ int main() {
 
 //int main() {
 ////    std::cout << "AveragePar1:" << std::endl;
-////    measureScalability(average_par_1);
+////    measureScalability(averageAlignedOmp);
 ////    std::cout << "AveragePar2:" << std::endl;
 ////    measureScalability(average_par_2);
 ////    std::cout << "CriticalSection:" << std::endl;

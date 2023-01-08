@@ -6,9 +6,9 @@ unsigned fibAsync(unsigned n) {
         return n;
     }
 
-    // if (free_threads > 0) {
-    //     ...
-    // }
+//     if (free_threads > 0) {
+//         ...
+//     }
 
     auto fib1 = std::async(fibAsync, n - 1);
     auto fib2 = std::async(fibAsync, n - 2);

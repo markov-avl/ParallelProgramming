@@ -1,5 +1,4 @@
 #include <cstdint>
-#include <iostream>
 #include <vector>
 #include <omp.h>
 #include <condition_variable>
@@ -7,56 +6,41 @@
 #include "../helper/lut.h"
 #include "../helper/partial_sum.h"
 #include "../helper/threads.h"
-#include "../helper/tester.h"
-#include "../helper/vector.h"
+#include "../helper/barrier.h"
 
 
-int randomizedAverageSimple(word seed, int *v, size_t n, int a, int b) {
+double randomizedAverageSimple(uint64_t seed, unsigned *v, size_t n, unsigned a, unsigned b) {
     auto x = seed;
-    word sum = 0;
+    uint64_t sum = 0;
     for (auto i = 0; i < n; ++i) {
         x = A * x + B;
         v[i] = a + int(x % (b - a + 1));
         sum += v[i];
     }
-    return sum / n;
+    return (double) sum / (double) n;
 }
 
 
-unsigned randomizeOMP(word seed, unsigned *v, size_t n, unsigned a, unsigned b) {
-    size_t T = omp_get_num_procs();
-    static auto lut = getLut(T);
+double randomizedAverageOmp(uint64_t seed, unsigned *v, size_t n, unsigned a, unsigned b) {
+    auto P = omp_get_num_procs();
+    auto partialSums = std::make_unique<PartialSum<uint64_t>[]>(P);
+    static auto lut = getLut(P);
 
-#pragma omp parallel
-    {
-        unsigned t = omp_get_thread_num();
-        size_t St = lut[t].a * seed + lut[t].b;
-
-        for (unsigned k = t; k < n; k += T) {
-            v[k] = a + int(St % (b - a + 1));
-            St = lut[t].a * St + lut[t].b;
-        }
-    }
-    int sum = 0;
-    for (unsigned i = 0; i < n; ++i)
-        sum += v[i];
-    return (sum / n);
-}
-
-
-unsigned randomizedAverageOmp(word seed, unsigned *v, size_t n, unsigned a, unsigned b) {
-    auto T = omp_get_num_procs();
-    auto partialSums = std::make_unique<PartialSum<word>[]>(T);
-    static auto lut = getLut(T);
+    unsigned T;
 
 #pragma omp parallel shared(partialSums, T)
     {
         auto t = omp_get_thread_num();
-        word St = lut[t].a * seed + lut[t].b;
-        word localSum = 0;
+        uint64_t St = lut[t].a * seed + lut[t].b;
+        uint64_t localSum = 0;
 
-        for (auto k = t; k < n; k += T) {
-            v[k] = a + int(St % (b - a + 1));
+#pragma omp single
+        {
+            T = omp_get_num_threads();
+        }
+
+        for (size_t k = t; k < n; k += T) {
+            v[k] = a + St % (b - a + 1);
             St = lut[t].a * St + lut[t].b;
             localSum += v[k];
         }
@@ -68,27 +52,37 @@ unsigned randomizedAverageOmp(word seed, unsigned *v, size_t n, unsigned a, unsi
         partialSums[0].value += partialSums[i].value;
     }
 
-    return partialSums[0].value / n;
+    return (double) partialSums[0].value / (double) n;
 }
 
 
-unsigned randomizedAverageCpp(word seed, int *v, size_t n, int a, int b) {
+double randomizedAverageCpp(uint64_t seed, unsigned *v, size_t n, unsigned a, unsigned b) {
     auto T = getThreadsNum();
-    auto partialSums = std::make_unique<PartialSum<word>[]>(T);
-    static auto lut = getLut(T);
+    auto P = omp_get_num_procs();
+    auto partialSums = std::make_unique<PartialSum<uint64_t>[]>(T);
+    static auto lut = getLut(P);
     std::vector<std::thread> workers;
+    Barrier barrier(T);
 
-    auto worker = [&partialSums, &v, T, seed, n, a, b](unsigned t) {
-        word St = lut[t].a * seed + lut[t].b;
-        word localSum = 0;
+    auto worker = [&barrier, &partialSums, &v, T, seed, n, a, b](unsigned t) {
+        uint64_t St = lut[t].a * seed + lut[t].b;
+        uint64_t localSum = 0;
 
-        for (auto k = t; k < n; k += T) {
-            v[k] = a + int(St % (b - a + 1));
+        for (size_t k = t; k < n; k += T) {
+            v[k] = a + St % (b - a + 1);
             St = lut[t].a * St + lut[t].b;
             localSum += v[k];
         }
 
         partialSums[t].value = localSum;
+        barrier.arrive_and_wait();
+
+        for (size_t step = 1, next_step = step * 2; step < T; step = next_step, next_step += next_step) {
+            if (t % next_step == 0 && t + step < T) {
+                partialSums[t].value += partialSums[t + step].value;
+            }
+            barrier.arrive_and_wait();
+        }
     };
 
     for (auto t = 1; t < T; ++t) {
@@ -99,19 +93,5 @@ unsigned randomizedAverageCpp(word seed, int *v, size_t n, int a, int b) {
         w.join();
     }
 
-    for (auto i = 1; i < T; ++i) {
-        partialSums[0].value += partialSums[i].value;
-    }
-
-    return (int) (partialSums[0].value / n);
-}
-
-int main() {
-    word seed = 100;
-    unsigned a = 1;
-    unsigned b = 80;
-    auto v = std::make_unique<unsigned[]>(N);
-
-    measureScalability("Randomized Average (OMP)", randomizeOMP, seed, v.get(), N, a, b);
-//    measureScalability("Randomized Average (C++)", randomizedAverageCpp, seed, v.get(), N, a, b);
+    return (double) partialSums[0].value / (double) n;
 }
